@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAMA KADAI - 5 Star Hotel Restaurant</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">🍽️ NAMA KADAI</div>
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+            <ul id="navMenu">
+                <li><a href="index.html">Menu</a></li>
+                <li><a href="admin.html">Admin</a></li>
+                <li>
+                    <a href="cart.html" class="cart-icon">
+                        🛒 Cart
+                        <span class="cart-badge" id="cartCount">0</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div style="text-align: center; margin: 3rem 0 2rem;">
+            <h1 class="luxury-text" style="margin-bottom: 0.5rem; font-size: 2.5rem;">Our Exquisite Menu</h1>
+            <p style="color: #666; font-size: 1.1rem; font-style: italic;">Experience the finest culinary delights</p>
+            <div style="width: 100px; height: 3px; background: var(--gold-gradient); margin: 1rem auto;"></div>
+        </div>
+        <p style="text-align: center; color: #666; margin-bottom: 2rem;">Click on any item to add it to your cart</p>
+        
+        <div class="menu-grid" id="menuGrid">
+            <!-- Menu items will be loaded here -->
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/cart.js"></script>
+    <script>
+        // Load and display menu items
+        function loadMenu() {
+            initializeDefaultMenu();
+            const items = getMenuItems();
+            const menuGrid = document.getElementById('menuGrid');
+            
+            menuGrid.innerHTML = '';
+            
+            if (items.length === 0) {
+                menuGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem;">No menu items available. Please add items in the Admin panel.</p>';
+                return;
+            }
+            
+            items.forEach(item => {
+                const menuCard = document.createElement('div');
+                menuCard.className = 'menu-card';
+                menuCard.onclick = () => addToCart(item.id);
+                menuCard.innerHTML = `
+                    <img src="${item.image}" alt="${item.name}" class="menu-card-image" onerror="this.src='https://via.placeholder.com/300x200?text=${encodeURIComponent(item.name)}'">
+                    <div class="menu-card-content">
+                        <h3>${item.name}</h3>
+                        <p class="menu-card-description">${item.description}</p>
+                        <div class="menu-card-footer">
+                            <span class="menu-card-price">${formatCurrency(item.price)}</span>
+                            <button class="add-to-cart-btn" onclick="event.stopPropagation(); addToCart('${item.id}')">Add to Cart</button>
+                        </div>
+                    </div>
+                `;
+                menuGrid.appendChild(menuCard);
+            });
+        }
+        
+        // Update cart count
+        function updateCartCount() {
+            const cart = getCart();
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const cartCount = document.getElementById('cartCount');
+            if (cartCount) {
+                cartCount.textContent = totalItems;
+                cartCount.style.display = totalItems > 0 ? 'block' : 'none';
+            }
+        }
+        
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('navMenu');
+            menu.classList.toggle('active');
+        }
+        
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('navMenu');
+            const toggle = document.querySelector('.mobile-menu-toggle');
+            if (menu && !menu.contains(e.target) && !toggle.contains(e.target)) {
+                menu.classList.remove('active');
+            }
+        });
+        
+        // Initialize on page load
+        loadMenu();
+        updateCartCount();
+    </script>
+</body>
+</html>
+

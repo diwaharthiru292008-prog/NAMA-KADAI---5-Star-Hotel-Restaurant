@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - NAMA KADAI Hotel Management</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">🍽️ NAMA KADAI</div>
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+            <ul id="navMenu">
+                <li><a href="index.html">Menu</a></li>
+                <li><a href="admin.html">Admin</a></li>
+                <li>
+                    <a href="cart.html" class="cart-icon">
+                        🛒 Cart
+                        <span class="cart-badge" id="cartCount">0</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h1 style="text-align: center; color: var(--secondary-color); margin-top: 2rem;">Menu Management</h1>
+        
+        <div class="admin-container">
+            <div class="form-card">
+                <h2 id="formTitle">Add Menu Item</h2>
+                <form id="menuForm" onsubmit="event.preventDefault(); addMenuItem();">
+                    <div class="form-group">
+                        <label for="itemName">Item Name *</label>
+                        <input type="text" id="itemName" required placeholder="e.g., Idly, Dosha">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="itemPrice">Price (₹) *</label>
+                        <input type="number" id="itemPrice" required min="0" step="0.01" placeholder="30.00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="itemDescription">Description</label>
+                        <textarea id="itemDescription" rows="3" placeholder="Delicious food item description"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="itemImage">Image Source</label>
+                        <div class="image-source-tabs">
+                            <button type="button" class="image-tab active" onclick="switchImageTab('url')">🌐 Web URL</button>
+                            <button type="button" class="image-tab" onclick="switchImageTab('upload')">📁 Upload</button>
+                            <button type="button" class="image-tab" onclick="switchImageTab('camera')">📷 Camera</button>
+                        </div>
+                        
+                        <!-- URL Input -->
+                        <div id="urlTab" class="image-tab-content active">
+                            <input type="url" id="itemImage" placeholder="https://images.unsplash.com/photo-... or any image URL">
+                            <small style="color: #666; display: block; margin-top: 0.25rem;">
+                                💡 Tip: Use images from Unsplash, Pexels, or any website
+                            </small>
+                        </div>
+                        
+                        <!-- File Upload -->
+                        <div id="uploadTab" class="image-tab-content">
+                            <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)">
+                            <small style="color: #666; display: block; margin-top: 0.25rem;">
+                                Select an image from your device
+                            </small>
+                        </div>
+                        
+                        <!-- Camera Capture -->
+                        <div id="cameraTab" class="image-tab-content">
+                            <button type="button" class="btn btn-camera" onclick="openCamera()">📷 Take Photo</button>
+                            <video id="cameraVideo" style="display: none; width: 100%; max-width: 400px; border-radius: 8px; margin-top: 1rem;"></video>
+                            <canvas id="cameraCanvas" style="display: none;"></canvas>
+                            <div id="cameraControls" style="display: none; margin-top: 1rem;">
+                                <button type="button" class="btn btn-capture" onclick="capturePhoto()">📸 Capture</button>
+                                <button type="button" class="btn btn-cancel" onclick="closeCamera()">Cancel</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Image Preview -->
+                        <div id="imagePreview" style="margin-top: 1rem; display: none;">
+                            <p style="margin-bottom: 0.5rem; font-weight: 500; color: var(--secondary-color);">Image Preview:</p>
+                            <img id="previewImg" src="" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 2px solid var(--border-color); object-fit: cover;">
+                            <button type="button" class="btn-remove-image" onclick="removeImage()" style="margin-top: 0.5rem;">Remove Image</button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Add Item</button>
+                    <button type="button" class="btn" onclick="resetForm()" style="margin-left: 1rem; background: #6c757d; color: white;">Reset</button>
+                </form>
+            </div>
+            
+            <div class="menu-list-card">
+                <h2>Menu Items</h2>
+                <div id="menuItemsList">
+                    <!-- Menu items will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/menu.js"></script>
+    <script src="js/cart.js"></script>
+    <script>
+        let currentImageSource = 'url';
+        let stream = null;
+        
+        // Image tab switching
+        function switchImageTab(tab) {
+            currentImageSource = tab;
+            
+            // Update tabs
+            document.querySelectorAll('.image-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.image-tab-content').forEach(t => t.classList.remove('active'));
+            
+            // Find and activate the clicked tab
+            const tabs = document.querySelectorAll('.image-tab');
+            tabs.forEach((t, index) => {
+                const tabNames = ['url', 'upload', 'camera'];
+                if (tabNames[index] === tab) {
+                    t.classList.add('active');
+                }
+            });
+            
+            document.getElementById(tab + 'Tab').classList.add('active');
+            
+            // Close camera if switching away
+            if (tab !== 'camera') {
+                closeCamera();
+            }
+        }
+        
+        // Image preview functionality for URL
+        document.getElementById('itemImage').addEventListener('input', function(e) {
+            const url = e.target.value.trim();
+            showImagePreview(url);
+        });
+        
+        function showImagePreview(imageSrc) {
+            const preview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            
+            if (imageSrc) {
+                previewImg.src = imageSrc;
+                preview.style.display = 'block';
+                previewImg.onerror = function() {
+                    preview.style.display = 'none';
+                    alert('Unable to load image. Please check the URL or try again.');
+                };
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+        
+        // Handle file upload
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageData = e.target.result;
+                    document.getElementById('itemImage').value = imageData;
+                    showImagePreview(imageData);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Camera functionality
+        function openCamera() {
+            const video = document.getElementById('cameraVideo');
+            const controls = document.getElementById('cameraControls');
+            
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(function(mediaStream) {
+                    stream = mediaStream;
+                    video.srcObject = stream;
+                    video.style.display = 'block';
+                    controls.style.display = 'block';
+                    video.play();
+                })
+                .catch(function(err) {
+                    alert('Unable to access camera: ' + err.message);
+                    console.error('Camera error:', err);
+                });
+        }
+        
+        function capturePhoto() {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('cameraCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            
+            const imageData = canvas.toDataURL('image/png');
+            document.getElementById('itemImage').value = imageData;
+            showImagePreview(imageData);
+            
+            closeCamera();
+        }
+        
+        function closeCamera() {
+            const video = document.getElementById('cameraVideo');
+            const controls = document.getElementById('cameraControls');
+            
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            video.style.display = 'none';
+            controls.style.display = 'none';
+            video.srcObject = null;
+        }
+        
+        function removeImage() {
+            document.getElementById('itemImage').value = '';
+            document.getElementById('imageUpload').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            closeCamera();
+        }
+        
+        function isValidImageUrl(url) {
+            return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image');
+        }
+        
+        // Update cart count
+        function updateCartCount() {
+            const cart = getCart();
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const cartCount = document.getElementById('cartCount');
+            if (cartCount) {
+                cartCount.textContent = totalItems;
+                cartCount.style.display = totalItems > 0 ? 'block' : 'none';
+            }
+        }
+        
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('navMenu');
+            menu.classList.toggle('active');
+        }
+        
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('navMenu');
+            const toggle = document.querySelector('.mobile-menu-toggle');
+            if (menu && !menu.contains(e.target) && !toggle.contains(e.target)) {
+                menu.classList.remove('active');
+            }
+        });
+        
+        updateCartCount();
+    </script>
+</body>
+</html>
+

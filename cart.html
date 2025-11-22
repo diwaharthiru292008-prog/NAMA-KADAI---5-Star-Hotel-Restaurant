@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - NAMA KADAI Hotel</title>
+    <link rel="stylesheet" href="styles/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">🍽️ NAMA KADAI</div>
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+            <ul id="navMenu">
+                <li><a href="index.html">Menu</a></li>
+                <li><a href="admin.html">Admin</a></li>
+                <li>
+                    <a href="cart.html" class="cart-icon">
+                        🛒 Cart
+                        <span class="cart-badge" id="cartCount">0</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="cart-container">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h1 style="color: var(--secondary-color); margin-bottom: 0.5rem; font-size: 2.2rem;">Your Order</h1>
+                <div style="width: 80px; height: 3px; background: var(--gold-gradient); margin: 0.5rem auto;"></div>
+            </div>
+            
+            <div id="cartItems">
+                <!-- Cart items will be loaded here -->
+            </div>
+            
+            <div id="cartTotal">
+                <!-- Bill summary will be loaded here -->
+            </div>
+            
+            <div class="cart-actions">
+                <button class="btn btn-clear" onclick="clearCartItems()">Clear Cart</button>
+                <button class="btn btn-print" onclick="printBill()">Print Bill</button>
+                <button class="btn btn-pay" onclick="showQRCode()">Pay Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="modal" onclick="if(event.target === this) closeQRModal()">
+        <div class="modal-content">
+            <h2>Scan to Pay</h2>
+            <p>Total Amount: <strong id="qrAmount">₹0.00</strong></p>
+            <div id="qrCodeContainer"></div>
+            <button class="close-modal" onclick="closeQRModal()">Close</button>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/cart.js"></script>
+    <script>
+        // Update cart count
+        function updateCartCount() {
+            const cart = getCart();
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const cartCount = document.getElementById('cartCount');
+            if (cartCount) {
+                cartCount.textContent = totalItems;
+                cartCount.style.display = totalItems > 0 ? 'block' : 'none';
+            }
+        }
+        
+        // Clear cart function
+        function clearCartItems() {
+            if (!confirm('Are you sure you want to clear the cart?')) {
+                return;
+            }
+            
+            clearCart(); // Call utility function from utils.js
+            updateCartDisplay();
+            updateCartCount();
+            alert('Cart cleared!');
+        }
+        
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('navMenu');
+            menu.classList.toggle('active');
+        }
+        
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('navMenu');
+            const toggle = document.querySelector('.mobile-menu-toggle');
+            if (menu && !menu.contains(e.target) && !toggle.contains(e.target)) {
+                menu.classList.remove('active');
+            }
+        });
+        
+        // Initialize on page load
+        updateCartDisplay();
+        updateCartCount();
+    </script>
+</body>
+</html>
+
